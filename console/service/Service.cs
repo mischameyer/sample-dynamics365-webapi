@@ -11,7 +11,7 @@ namespace service
 
         public GetContacts()
         {
-            Console.WriteLine("Constructor Service1");
+            Console.WriteLine("Constructor Service");
         }
 
         public object GetData()
@@ -40,15 +40,13 @@ namespace service
                 DisplayException(ex);
             }
 
-            Console.ReadKey();
-
             return null;
 
         }
 
         public void Dispose()
         {
-            Console.WriteLine("Dispose Service1");
+            Console.WriteLine("Dispose Service");
         }
 
         /// <summary>

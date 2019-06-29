@@ -129,8 +129,8 @@ namespace helper
         {
             if (_config != null && (!string.IsNullOrEmpty(_config.Username) && _config.Password != null))
             {
-                UserCredential cred = new UserCredential(_config.Username);
-                return await _context.AcquireTokenAsync(_config.ServiceUrl, _config.ClientId, cred);
+                UserCredential cred = new UserCredential(_config.Username);                
+                return await _context.AcquireTokenAsync(_config.ServiceUrl, _config.ClientId, cred);                
             }
             return null;                
         }

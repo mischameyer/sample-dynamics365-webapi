@@ -7,16 +7,18 @@ namespace console
     class Program
     {
         static void Main(string[] args)
-        {                        
-            var services = new ServiceCollection();            
+        {
+            var services = new ServiceCollection();
             services.AddTransient<GetContacts>();
 
             var provider = services.BuildServiceProvider();
 
-            using (var service1 = provider.GetService<GetContacts>())
+            using (var service = provider.GetService<GetContacts>())
             {
-                var result = service1.GetData();
+                var result = service.GetData();
             }
+
+            Console.ReadKey();
         }
 
 

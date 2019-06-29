@@ -16,7 +16,8 @@
 using System;
 using System.IO;
 using System.Security;
-using System.Configuration;
+using Microsoft.Extensions.Configuration;
+//using System.Configuration;
 
 namespace helper
 {
@@ -117,9 +118,9 @@ public class Configuration
         public FileConfiguration(string name)
             : base()
         {
-            var path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), Environment.GetCommandLineArgs()[0]);
+            var path = Directory.GetCurrentDirectory();
 
-            Load(name, String.Concat(path, ".config"));
+            Load(String.Concat(path, @"\Appsettings.json"));
         }
 
         #endregion Constructors
@@ -136,54 +137,36 @@ public class Configuration
         /// Each CRM organization can have its own connection string. A value of null or String.Empty results
         /// in the first (top most) connection string being used.</param>
         /// <param name="path">The full or relative pathname of the configuration file.</param>
-        public virtual void Load(string connectionName, string path)
+        public virtual void Load(string file)
         {
             // Check passed parameters.
-            if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
-                throw new ArgumentException("The specified app.config file path is invalid.", this.ToString());
+            if (string.IsNullOrEmpty(file) || !System.IO.File.Exists(file))
+                throw new ArgumentException("The specified appsettings.json file path is invalid.", this.ToString());
             else
-                PathToConfig = path;
-
+                PathToConfig = file;
             try
             {
                 // Read the app.config file and obtain the app settings.
-                System.Configuration.Configuration config = null;
-                ExeConfigurationFileMap configFileMap = new ExeConfigurationFileMap();
-                configFileMap.ExeConfigFilename = PathToConfig;
-                config = ConfigurationManager.OpenMappedExeConfiguration(configFileMap, ConfigurationUserLevel.None);
+                var builder = new ConfigurationBuilder()
+                        .SetBasePath(Directory.GetCurrentDirectory())
+                        .AddJsonFile(file, optional: true, reloadOnChange: true);
 
-                var appSettings = config.AppSettings.Settings;
+                IConfigurationRoot configuration = builder.Build();
 
-                // If an alternate config file exists, load that configuration instead. Note the test
-                // for redirectTo.Equals(path) to avoid an infinite loop.
-                if (appSettings["AlternateConfig"] != null)
-                {
-                    var redirectTo = appSettings["AlternateConfig"].Value;
-                    if (redirectTo != null && !redirectTo.Equals(path) && System.IO.File.Exists(redirectTo))
-                    {
-                        Load(connectionName, redirectTo);
-                        return;
-                    }
-                }
+                Console.WriteLine(configuration.GetConnectionString("CrmOnline"));                                             
 
-                // Get the connection string.
-                ConnectionStringSettings connection;
-                if (string.IsNullOrEmpty(connectionName))
-                {
-                    // No connection string name specified, so use the first one in the file.
-                    connection = config.ConnectionStrings.ConnectionStrings[0];
-                    Name = connection.Name;
-                }
-                else
-                {
-                    connection = config.ConnectionStrings.ConnectionStrings[0];
-                    Name = connectionName;
-                }
+                string connectionString = string.Empty;
+
+                // Get the connection string.                
+                if (!string.IsNullOrEmpty(configuration.GetConnectionString("CrmOnline")))
+                {                    
+                    connectionString = configuration.GetConnectionString("CrmOnline");
+                }                
 
                 // Get the connection string parameter values.
-                if (connection != null)
+                if (!string.IsNullOrEmpty(connectionString))
                 {
-                    var parameters = connection.ConnectionString.Split(';');
+                    var parameters = connectionString.Split(';');
                     foreach (string parameter in parameters)
                     {
                         var trimmedParameter = parameter.Trim();
@@ -208,12 +191,13 @@ public class Configuration
                     throw new Exception("The specified connection string could not be found.");
 
                 // Get the Azure Active Directory application registration settings.
-                RedirectUrl = appSettings["RedirectUrl"]?.Value;
-                ClientId = appSettings["ClientId"]?.Value;
+                                
+                RedirectUrl = configuration["AppSettings:RedirectUrl"];
+                ClientId = configuration["AppSettings:ClientId"]; 
             }
             catch (InvalidOperationException e)
             {
-                throw new Exception("Required setting in app.config does not exist or is of the wrong type.", e);
+                throw new Exception("Required setting in appsettings.json does not exist or is of the wrong type.", e);
             }
         }
 
